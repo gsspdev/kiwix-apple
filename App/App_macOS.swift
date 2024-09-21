@@ -18,6 +18,7 @@ import UserNotifications
 import Combine
 import Defaults
 import CoreKiwix
+import PassKit
 
 #if os(macOS)
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -108,6 +109,7 @@ struct RootView: View {
     private let openURL = NotificationCenter.default.publisher(for: .openURL)
     private let appTerminates = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
     private let tabCloses = NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)
+    private let payment = Payment()
 
     var body: some View {
         NavigationView {
@@ -121,6 +123,21 @@ struct RootView: View {
                             Label(navigationItem.name, systemImage: navigationItem.icon)
                         }
                     }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if PKPaymentAuthorizationController.canMakePayments(
+                    usingNetworks: Payment.supportedNetworks,
+                    capabilities: Payment.capabilities
+                ) {
+                    PayWithApplePayButton(
+                        .donate,
+                        request: payment.donationRequest(),
+                        onPaymentAuthorizationChange: payment.onPaymentAuthPhase(phase:),
+                        onMerchantSessionRequested: payment.onMerchantSessionUpdate
+                    )
+                    .frame(width: 200, height: 30, alignment: .center)
+                    .padding()
                 }
             }
             .frame(minWidth: 150)
